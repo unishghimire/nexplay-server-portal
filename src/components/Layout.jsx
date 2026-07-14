@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { LayoutDashboard, Trophy, Users, BarChart2, Settings, LogOut, Menu, X, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, Trophy, Users, BarChart2, Settings, LogOut, Menu, X, ChevronDown, CreditCard } from 'lucide-react'
 
 const NAV = [
   { to:'/dashboard',     label:'Dashboard',     icon:LayoutDashboard },
   { to:'/tournaments',   label:'Tournaments',   icon:Trophy },
   { to:'/registrations', label:'Registrations', icon:Users },
   { to:'/analytics',     label:'Analytics',     icon:BarChart2 },
+  { to:'/subscription',    label:'Subscription',    icon:CreditCard },
   { to:'/settings',      label:'Settings',      icon:Settings },
 ]
 

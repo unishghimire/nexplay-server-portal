@@ -13,6 +13,7 @@ import TournamentDetail from './pages/TournamentDetail'
 import Registrations from './pages/Registrations'
 import Analytics    from './pages/Analytics'
 import Settings     from './pages/Settings'
+import Subscription from './pages/Subscription'
 
 function PrivateRoute({ children }) {
   const { user, isLoading } = useAuth()
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="/tournaments/:id"         element={<TournamentDetail/>} />
         <Route path="/registrations"           element={<Registrations/>} />
         <Route path="/analytics"               element={<Analytics/>} />
+        <Route path="/subscription"            element={<Subscription/>} />
         <Route path="/settings"                element={<Settings/>} />
       </Route>
 

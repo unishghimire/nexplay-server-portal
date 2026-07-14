@@ -36,4 +36,8 @@ export const api = {
 
   getAnalytics: (guildId, token) =>
     request(`?action=analytics&guild_id=${guildId}`, { headers: auth(token) }),
+
+  getPaymentMethods: () => request('?action=payment_methods'),
+  submitPayment: (data, token) => request('?action=submit_payment', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
+  getMyTransactions: (guildId, token) => request(`?action=my_transactions&guild_id=${guildId}`, { headers: { Authorization: `Bearer ${token}` } }),
 }
