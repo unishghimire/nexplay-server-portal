@@ -1,4 +1,4 @@
-// Base44 backend function URL
+// Direct Base44 backend function endpoint
 const FUNCTION_BASE = 'https://6a5226b5047f5c59d961130e.base44.app/api/apps/6a5226b5047f5c59d961130e/functions/discordAuth'
 
 async function request(path, options = {}) {
@@ -7,7 +7,7 @@ async function request(path, options = {}) {
     headers: { 'Content-Type': 'application/json', ...options.headers },
   })
   const data = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error(data.error || data.message || `HTTP ${r.status}`)
+  if (!r.ok) throw new Error(data.error || data.message || data.detail || `HTTP ${r.status}`)
   return data
 }
 
