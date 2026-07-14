@@ -1,7 +1,8 @@
-const BASE = import.meta.env.VITE_API_BASE || ''
+// Base44 backend function URL
+const FUNCTION_BASE = 'https://6a5226b5047f5c59d961130e.base44.app/api/apps/6a5226b5047f5c59d961130e/functions/discordAuth'
 
 async function request(path, options = {}) {
-  const r = await fetch(`${BASE}${path}`, {
+  const r = await fetch(`${FUNCTION_BASE}${path}`, {
     ...options,
     headers: { 'Content-Type': 'application/json', ...options.headers },
   })
@@ -16,18 +17,23 @@ function auth(token) {
 
 export const api = {
   exchangeCode: (code, redirectUri) =>
-    request('/api/functions/discordAuth?action=callback', {
+    request('?action=callback', {
       method: 'POST',
       body: JSON.stringify({ code, redirect_uri: redirectUri }),
     }),
+
   getMe: (token) =>
-    request('/api/functions/discordAuth?action=me', { headers: auth(token) }),
+    request('?action=me', { headers: auth(token) }),
+
   getServer: (guildId, token) =>
-    request(`/api/functions/discordAuth?action=server&guild_id=${guildId}`, { headers: auth(token) }),
+    request(`?action=server&guild_id=${guildId}`, { headers: auth(token) }),
+
   getTournaments: (guildId, token) =>
-    request(`/api/functions/discordAuth?action=tournaments&guild_id=${guildId}`, { headers: auth(token) }),
+    request(`?action=tournaments&guild_id=${guildId}`, { headers: auth(token) }),
+
   getTournamentDetail: (tournamentId, guildId, token) =>
-    request(`/api/functions/discordAuth?action=registrations&tournament_id=${tournamentId}&guild_id=${guildId}`, { headers: auth(token) }),
+    request(`?action=tournament_detail&tournament_id=${tournamentId}&guild_id=${guildId}`, { headers: auth(token) }),
+
   getAnalytics: (guildId, token) =>
-    request(`/api/functions/discordAuth?action=analytics&guild_id=${guildId}`, { headers: auth(token) }),
+    request(`?action=analytics&guild_id=${guildId}`, { headers: auth(token) }),
 }
