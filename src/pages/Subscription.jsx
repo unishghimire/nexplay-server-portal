@@ -1,38 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
-import { Card } from '../components/ui/Card'
-import { Badge } from '../components/ui/Badge'
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
-import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/Dialog'
 import { Check, CreditCard, Clock, Calendar, AlertTriangle, Upload, ChevronRight } from 'lucide-react'
 
 const AVAILABLE_PLANS = [
-  {
-    name: 'Free Trial',
-    price: 'NPR 0',
-    period: 'forever',
-    tournamentLimit: 3,
-    color: 'bg-slate-600/20 text-slate-400 border-slate-600/30',
-    badge: null,
-    description: 'Try NexPlay with up to 3 tournaments — no payment needed.',
-    features: [
-      'Up to 3 Tournaments total',
-      'Basic brackets & matchmaking',
-      'Player registration channels',
-      'Discord roles integration',
-      'Community support',
-    ]
-  },
   {
     name: 'Starter',
     price: 'NPR 99',
     period: 'month',
     tournamentLimit: 10,
-    color: 'bg-blue-600/20 text-blue-400 border-blue-600/30',
-    badge: null,
-    description: 'Normal access — run regular tournaments for your community.',
+    color: 'border-blue-500/30 bg-blue-500/5',
     features: [
       'Up to 10 Tournaments / month',
       'Automated match generation',
@@ -47,9 +24,7 @@ const AVAILABLE_PLANS = [
     price: 'NPR 299',
     period: 'month',
     tournamentLimit: Infinity,
-    color: 'bg-indigo-600/20 text-indigo-400 border-indigo-600/30',
-    badge: 'Most Popular',
-    description: 'AI tournament control — unlimited tournaments with smart automation.',
+    color: 'border-indigo-500/30 bg-indigo-500/5',
     features: [
       'Unlimited Tournaments',
       'AI tournament controls',
@@ -65,9 +40,7 @@ const AVAILABLE_PLANS = [
     price: 'NPR 399',
     period: 'month',
     tournamentLimit: Infinity,
-    color: 'bg-amber-600/20 text-amber-400 border-amber-600/30',
-    badge: 'Full Access',
-    description: 'Everything — AI support agent, memes, clips, full automation.',
+    color: 'border-amber-500/30 bg-amber-500/5',
     features: [
       'Everything in Pro',
       'AI support agent in Discord',
@@ -83,89 +56,50 @@ const AVAILABLE_PLANS = [
 export default function Subscription() {
   const { guild, token } = useAuth()
   const [server, setServer] = useState(null)
-  const [transactions, setTransactions] = useState([])
   const [paymentMethods, setPaymentMethods] = useState([])
-  
+  const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [txLoading, setTxLoading] = useState(false)
-  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false)
-  
-  // Upgrade Modal State
-  const [selectedPlan, setSelectedPlan] = useState(null)
+  const [error, setError] = useState('')
+
+  // Payment Form State
+  const [selectedPlan, setSelectedPlan] = useState(AVAILABLE_PLANS[0])
   const [selectedMethod, setSelectedMethod] = useState(null)
   const [transactionId, setTransactionId] = useState('')
   const [screenshotBase64, setScreenshotBase64] = useState('')
   const [fileName, setFileName] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [submitSuccess, setSubmitSuccess] = useState('')
   const [submitError, setSubmitError] = useState('')
-  const [submitSuccess, setSubmitSuccess] = useState(false)
 
-  // Fetch initial server status
-  const fetchServerStatus = async () => {
+  const loadData = () => {
     if (!guild || !token) return
-    try {
-      const data = await api.getServer(guild.id, token)
-      if (data && data.server) {
-        setServer(data.server)
-      }
-    } catch (err) {
-      console.error('Error fetching server details:', err)
-    }
-  }
-
-  // Fetch transactions history
-  const fetchTransactions = async () => {
-    if (!guild || !token) return
-    setTxLoading(true)
-    try {
-      const data = await api.getMyTransactions(guild.id, token)
-      setTransactions(data?.transactions || [])
-    } catch (err) {
-      console.error('Error fetching transactions:', err)
-    } finally {
-      setTxLoading(false)
-    }
+    setLoading(true)
+    setError('')
+    Promise.all([
+      api.getServer(guild.id, token),
+      api.getPaymentMethods(),
+      api.getMyTransactions(guild.id, token)
+    ])
+      .then(([serverResponse, paymentResponse, transactionsResponse]) => {
+        setServer(serverResponse?.server || serverResponse)
+        setPaymentMethods(paymentResponse || [])
+        setTransactions(transactionsResponse?.transactions || transactionsResponse || [])
+        if (paymentResponse && paymentResponse.length > 0) {
+          const activeMethod = paymentResponse.find(m => m.active) || paymentResponse[0]
+          setSelectedMethod(activeMethod)
+        }
+      })
+      .catch((err) => {
+        console.error(err)
+        setError(err.message || 'Failed to load subscription details.')
+      })
+      .finally(() => setLoading(false))
   }
 
   useEffect(() => {
-    if (!guild || !token) return
-    
-    const init = async () => {
-      setLoading(true)
-      await fetchServerStatus()
-      await fetchTransactions()
-      setLoading(false)
-    }
-
-    init()
+    loadData()
   }, [guild, token])
 
-  // Open Upgrade modal and fetch payment methods
-  const handleUpgradeClick = async (plan) => {
-    setSelectedPlan(plan)
-    setSubmitError('')
-    setSubmitSuccess(false)
-    setTransactionId('')
-    setScreenshotBase64('')
-    setFileName('')
-    setSelectedMethod(null)
-
-    setPaymentMethodsLoading(true)
-    try {
-      const methods = await api.getPaymentMethods()
-      setPaymentMethods(methods || [])
-      if (methods && methods.length > 0) {
-        setSelectedMethod(methods[0])
-      }
-    } catch (err) {
-      console.error('Error fetching payment methods:', err)
-      setSubmitError('Failed to load payment methods. Please try again.')
-    } finally {
-      setPaymentMethodsLoading(false)
-    }
-  }
-
-  // Handle screenshot file input & base64 conversion
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -176,48 +110,51 @@ export default function Subscription() {
       setScreenshotBase64(reader.result)
     }
     reader.onerror = () => {
-      setSubmitError('Failed to read file. Please choose another image.')
+      setSubmitError('Failed to read file. Please try another image.')
     }
     reader.readAsDataURL(file)
   }
 
-  // Submit payment upgrade
-  const handleSubmitPayment = async (e) => {
+  const handlePaymentSubmit = async (e) => {
     e.preventDefault()
     if (!selectedPlan || !selectedMethod) return
     if (!transactionId.trim()) {
-      setSubmitError('Please enter the transaction ID.')
+      setSubmitError('Please enter a Transaction ID.')
       return
     }
     if (!screenshotBase64) {
-      setSubmitError('Please upload a screenshot of the payment receipt.')
+      setSubmitError('Please upload a screenshot of your payment.')
       return
     }
 
     setSubmitting(true)
     setSubmitError('')
+    setSubmitSuccess('')
 
     try {
       const amountValue = selectedPlan.name === 'Starter' ? 99 : selectedPlan.name === 'Pro' ? 299 : selectedPlan.name === 'Elite' ? 399 : 0
-      
       const payload = {
         guild_id: guild.id,
         guild_name: guild.name,
         plan_name: selectedPlan.name,
         amount: amountValue,
         transaction_id: transactionId,
+        payment_method_name: selectedMethod.name,
         screenshot_base64: screenshotBase64,
-        payment_method_name: selectedMethod.name
       }
 
       await api.submitPayment(payload, token)
-      setSubmitSuccess(true)
-      // Refresh transactions after brief delay
-      fetchTransactions()
-      fetchServerStatus()
+      setSubmitSuccess('🎉 Payment details submitted successfully! Our team will verify and activate your plan shortly.')
+      setTransactionId('')
+      setScreenshotBase64('')
+      setFileName('')
+
+      // Reload transactions list
+      const txs = await api.getMyTransactions(guild.id, token)
+      setTransactions(txs?.transactions || txs || [])
     } catch (err) {
-      console.error('Error submitting payment request:', err)
-      setSubmitError(err.message || 'An error occurred while submitting payment. Please try again.')
+      console.error(err)
+      setSubmitError(err.message || 'An error occurred while submitting payment. Please verify inputs.')
     } finally {
       setSubmitting(false)
     }
@@ -231,344 +168,294 @@ export default function Subscription() {
     )
   }
 
-  const planName = server?.plan_name || 'Free Trial'
-  const subStatus = server?.subscription_status || 'trial'
-  const tournamentsUsed = server?.tournaments_used || 0
-  const tournamentLimit = server?.tournament_limit || 3
-  const renewsAt = server?.renews_at ? server.renews_at.substring(0, 10) : '—'
-
-  // Progress Bar percentage
-  const usagePercentage = tournamentLimit === Infinity ? 0 : Math.min(100, (tournamentsUsed / tournamentLimit) * 100)
-
-  // Status Badge styling helper
-  const getStatusBadge = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'active':
-        return <Badge variant="success" className="uppercase tracking-wider">Active</Badge>
-      case 'trial':
-        return <Badge variant="primary" className="uppercase tracking-wider">Free Trial</Badge>
-      case 'expired':
-        return <Badge variant="danger" className="uppercase tracking-wider">Expired</Badge>
-      default:
-        return <Badge variant="warning" className="uppercase tracking-wider">{status || 'Unknown'}</Badge>
-    }
+  if (error) {
+    return (
+      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-5 text-center">
+        <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-2" />
+        <p className="text-red-300 font-medium">{error}</p>
+        <button
+          onClick={loadData}
+          className="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
+  const currentPlan = server?.plan_name || 'Free Trial'
+  const currentStatus = server?.subscription_status || 'trial'
+  const used = server?.tournaments_used || 0
+  const limit = server?.tournament_limit || 3
+  const usagePercentage = limit === Infinity ? 0 : Math.min(100, (used / limit) * 100)
+
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
-      {/* Page Title */}
+    <div className="space-y-8 max-w-6xl mx-auto">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Subscription Plan</h1>
-        <p className="text-gray-400 mt-1">Manage your Discord server's plan, upgrade features, and view payment history.</p>
+        <h1 className="text-2xl font-bold text-white">Subscription & Billing</h1>
+        <p className="text-gray-400 text-sm mt-0.5">Upgrade your server plan, set up payment details, and view transactions history.</p>
       </div>
 
-      {/* 1. Current Plan Card */}
-      <Card className="bg-[#0d0d1a] border-[#1a1a2e] p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-500 font-semibold tracking-wider uppercase">CURRENT PLAN</span>
-              {getStatusBadge(subStatus)}
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">{planName}</h2>
-              <div className="flex items-center gap-2 mt-1.5 text-gray-400 text-sm">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                <span>Next Renewal: <strong>{renewsAt}</strong></span>
-              </div>
-            </div>
+      {/* Current Plan Overview */}
+      <div className="bg-[#13131a] border border-white/5 rounded-xl p-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">CURRENT PLAN</span>
+            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
+              currentStatus === 'trial' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+            }`}>
+              {currentStatus.toUpperCase()}
+            </span>
           </div>
-
-          {/* Tournament Usage Limit Bar */}
-          <div className="w-full md:w-80 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400 font-medium">Tournament Usage</span>
-              <span className="text-white font-semibold font-mono">
-                {tournamentsUsed} / {tournamentLimit === Infinity ? '∞' : tournamentLimit}
-              </span>
-            </div>
-            <div className="w-full bg-[#16162a] h-2.5 rounded-full overflow-hidden border border-white/5">
-              <div 
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full transition-all duration-300"
-                style={{ width: `${tournamentLimit === Infinity ? 0 : usagePercentage}%` }}
-              />
-            </div>
-            {tournamentLimit !== Infinity && tournamentsUsed >= tournamentLimit && (
-              <p className="text-xs text-rose-400 flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Usage limit reached. Upgrade to keep hosting tournaments.
-              </p>
-            )}
+          <div>
+            <h2 className="text-2xl font-bold text-white">{currentPlan}</h2>
+            <p className="text-gray-500 text-sm mt-1">
+              Active on guild: <span className="text-gray-300 font-medium font-mono">{guild?.name}</span>
+            </p>
           </div>
         </div>
-      </Card>
 
-      {/* 2. Available Plans Grid */}
+        {/* Progress Usage bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400 font-medium">Tournament Usage</span>
+            <span className="text-white font-semibold font-mono">
+              {used} / {limit === Infinity ? '∞' : limit}
+            </span>
+          </div>
+          <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
+            <div
+              className="bg-indigo-500 h-full rounded-full transition-all duration-300"
+              style={{ width: `${limit === Infinity ? 0 : usagePercentage}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            {limit === Infinity ? 'Unlimited tournament creation' : `${limit - used} slots remaining before limit is hit`}
+          </p>
+        </div>
+      </div>
+
+      {/* Plan Cards */}
       <div className="space-y-4">
-        <div>
-          <h3 className="text-xl font-bold text-white tracking-tight">Available Premium Plans</h3>
-          <p className="text-gray-400 text-sm">Unlock more capabilities and host tournaments without restrictions.</p>
-        </div>
-
+        <h3 className="text-white font-semibold text-lg">Available Premium Plans</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {AVAILABLE_PLANS.map((plan) => {
-            const isCurrent = planName.toLowerCase() === plan.name.toLowerCase()
-            return (
-              <Card 
-                key={plan.name} 
-                className={`bg-[#0d0d1a] border-[#1a1a2e] flex flex-col justify-between p-6 relative overflow-hidden ${
-                  isCurrent ? 'ring-2 ring-indigo-500/50 shadow-lg shadow-indigo-500/10' : ''
-                } ${plan.badge === 'Most Popular' ? 'ring-1 ring-indigo-500/30' : ''}`}
-              >
-                {isCurrent && (
-                  <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-bl-lg">
-                    Current
-                  </div>
-                )}
-                {plan.badge && !isCurrent && (
-                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border mb-3 w-fit ${plan.color}`}>
-                    {plan.badge}
-                  </div>
-                )}
+          {AVAILABLE_PLANS.map((plan) => (
+            <div
+              key={plan.name}
+              className={`border rounded-xl p-5 flex flex-col justify-between space-y-6 transition-all ${
+                plan.color
+              } ${selectedPlan.name === plan.name ? 'ring-2 ring-indigo-500 border-transparent' : 'border-white/5'}`}
+            >
+              <div className="space-y-4">
                 <div>
-                  <h4 className="text-lg font-bold text-white">{plan.name}</h4>
-                  <p className="text-xs text-gray-500 mt-1 min-h-[32px]">{plan.description}</p>
-                  
-                  <div className="mt-4 mb-6">
-                    <span className="text-3xl font-extrabold text-white">{plan.price}</span>
-                    <span className="text-gray-400 text-sm"> / {plan.period}</span>
+                  <h4 className="text-white font-bold text-xl">{plan.name}</h4>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-2xl font-black text-white">{plan.price}</span>
+                    <span className="text-xs text-gray-500">/ {plan.period}</span>
                   </div>
-
-                  <hr className="border-white/5 my-4" />
-
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feat) => (
-                      <li key={feat} className="flex items-start gap-2 text-sm text-gray-300">
-                        <Check className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
 
-                <Button
-                  variant={isCurrent ? 'outline' : 'default'}
-                  className="w-full font-semibold"
-                  disabled={isCurrent || plan.name === 'Free Trial'}
-                  onClick={() => handleUpgradeClick(plan)}
-                >
-                  {isCurrent ? 'Your Current Plan' : plan.name === 'Free Trial' ? 'Unavailable' : 'Upgrade Now'}
-                </Button>
-              </Card>
-            )
-          })}
+                <ul className="space-y-2.5">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <button
+                onClick={() => setSelectedPlan(plan)}
+                className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                  selectedPlan.name === plan.name
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/15'
+                    : 'bg-white/5 hover:bg-white/10 text-gray-300'
+                }`}
+              >
+                {selectedPlan.name === plan.name ? 'Selected Plan' : 'Select Plan'}
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* 4. Transaction History Table */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-bold text-white tracking-tight">Transaction History</h3>
-            <p className="text-gray-400 text-sm">Review your past payment upgrade records and status updates.</p>
-          </div>
-          {txLoading && <div className="w-4 h-4 border border-indigo-500 border-t-transparent rounded-full animate-spin" />}
+      {/* Upgrade Form & Payment details */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+        {/* Account Payment details */}
+        <div className="lg:col-span-1 bg-[#13131a] border border-white/5 rounded-xl p-5 space-y-6">
+          <h3 className="text-white font-semibold">Payment Info</h3>
+          {paymentMethods.length === 0 ? (
+            <p className="text-gray-500 text-sm">No active payment methods found.</p>
+          ) : (
+            <div className="space-y-4">
+              <label className="text-xs text-gray-500 font-semibold block uppercase">Payment Method</label>
+              <div className="grid grid-cols-2 gap-2">
+                {paymentMethods.map((m) => (
+                  <button
+                    key={m.name}
+                    onClick={() => setSelectedMethod(m)}
+                    className={`px-3 py-2 rounded-lg border text-xs font-semibold text-center transition-colors ${
+                      selectedMethod?.name === m.name
+                        ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400'
+                        : 'border-white/5 bg-white/2 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {m.name}
+                  </button>
+                ))}
+              </div>
+
+              {selectedMethod && (
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  {selectedMethod.qr_image_url && (
+                    <div className="bg-white p-2 rounded-lg w-40 h-40 mx-auto border border-white/10 flex items-center justify-center">
+                      <img src={selectedMethod.qr_image_url} alt="Payment QR" className="w-full h-full object-contain" />
+                    </div>
+                  )}
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-gray-500 text-xs block">Account Name</span>
+                      <span className="text-white font-medium">{selectedMethod.account_name || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 text-xs block">Account/Wallet Number</span>
+                      <span className="text-white font-mono font-semibold">{selectedMethod.account_number || '—'}</span>
+                    </div>
+                    {selectedMethod.description && (
+                      <p className="text-xs text-gray-400 mt-2 bg-white/2 p-2 rounded leading-relaxed">
+                        {selectedMethod.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <Card className="bg-[#0d0d1a] border-[#1a1a2e] overflow-hidden">
-          {transactions.length === 0 ? (
-            <div className="text-center py-12">
-              <CreditCard className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-400 font-medium">No transactions found</p>
-              <p className="text-gray-600 text-xs mt-1">Upgrade your plan above to submit your first payment receipt.</p>
+        {/* Submission Form */}
+        <div className="lg:col-span-2 bg-[#13131a] border border-white/5 rounded-xl p-5">
+          <h3 className="text-white font-semibold mb-4">Submit Payment Request</h3>
+          <form onSubmit={handlePaymentSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-gray-500 font-semibold mb-1 block">Plan Selected</label>
+                <input
+                  type="text"
+                  disabled
+                  value={selectedPlan?.name || ''}
+                  className="w-full px-3 py-2.5 bg-white/2 border border-white/5 rounded-lg text-white font-medium text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 font-semibold mb-1 block">Amount Due</label>
+                <input
+                  type="text"
+                  disabled
+                  value={selectedPlan?.price || ''}
+                  className="w-full px-3 py-2.5 bg-white/2 border border-white/5 rounded-lg text-white font-medium text-sm"
+                />
+              </div>
             </div>
-          ) : (
+
+            <div>
+              <label className="text-xs text-gray-500 font-semibold mb-1 block">Transaction ID (TxID)</label>
+              <input
+                type="text"
+                value={transactionId}
+                onChange={(e) => setTransactionId(e.target.value)}
+                placeholder="Enter unique billing transaction code"
+                className="w-full px-3 py-2.5 bg-[#0c0c14] border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500/50 placeholder-gray-600 font-mono"
+              />
+            </div>
+
+            {/* Screenshot Upload */}
+            <div>
+              <label className="text-xs text-gray-500 font-semibold mb-1 block">Screenshot of Receipt</label>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/5 text-sm font-semibold rounded-lg transition-colors cursor-pointer shrink-0">
+                  <Upload className="w-4 h-4" />
+                  <span>Choose Image</span>
+                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                </label>
+                <span className="text-xs text-gray-500 truncate max-w-xs">{fileName || 'No file selected'}</span>
+              </div>
+            </div>
+
+            {submitError && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                {submitError}
+              </div>
+            )}
+
+            {submitSuccess && (
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+                {submitSuccess}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-bold transition-all shadow-lg shadow-indigo-600/15"
+            >
+              {submitting ? 'Submitting Details...' : 'Submit Upgrade Verification'}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Transaction History */}
+      <div className="space-y-4 pt-4">
+        <h3 className="text-white font-semibold text-lg">Transaction History</h3>
+        {transactions.length === 0 ? (
+          <p className="text-gray-500 text-sm py-4 bg-[#13131a] rounded-xl border border-white/5 text-center">No transaction records found.</p>
+        ) : (
+          <div className="bg-[#13131a] border border-white/5 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/5 bg-white/2 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    <th className="px-6 py-4">Date</th>
-                    <th className="px-6 py-4">Plan</th>
-                    <th className="px-6 py-4">Amount</th>
-                    <th className="px-6 py-4">Method</th>
-                    <th className="px-6 py-4">TX ID</th>
-                    <th className="px-6 py-4">Status</th>
+                  <tr className="border-b border-white/5 bg-white/2 text-gray-500 font-semibold text-xs uppercase">
+                    {['Transaction ID', 'Plan', 'Amount', 'Payment Method', 'Submitted At', 'Status'].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 text-sm text-gray-300">
-                  {transactions.map((tx) => (
-                    <tr key={tx.id || tx.transaction_id} className="hover:bg-white/2 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-400 font-mono">
-                        {tx.created_date ? tx.created_date.substring(0, 10) : '—'}
+                <tbody className="divide-y divide-white/5">
+                  {transactions.map((t, idx) => (
+                    <tr key={t.id || idx} className="hover:bg-white/3 transition-colors">
+                      <td className="px-4 py-3 text-white font-mono text-xs">{t.transaction_id || '—'}</td>
+                      <td className="px-4 py-3 text-white font-medium">{t.plan_name || 'Starter'}</td>
+                      <td className="px-4 py-3 text-gray-300 font-mono text-xs">NPR {t.amount || 0}</td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{t.payment_method || '—'}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {t.submitted_at ? t.submitted_at.substring(0, 16).replace('T', ' ') : '—'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap font-medium text-white">{tx.plan_name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-white font-semibold">NPR {tx.amount}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-400 text-xs">{tx.payment_method_name || '—'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-gray-400 select-all" title={tx.transaction_id}>
-                        {tx.transaction_id ? (tx.transaction_id.length > 15 ? `${tx.transaction_id.substring(0, 15)}...` : tx.transaction_id) : '—'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge 
-                          variant={
-                            tx.status === 'completed' || tx.status === 'approved' ? 'success' :
-                            tx.status === 'pending' ? 'warning' : 'danger'
-                          }
-                          className="capitalize text-[11px]"
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                            (t.status || '').toLowerCase() === 'approved'
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : (t.status || '').toLowerCase() === 'rejected'
+                              ? 'bg-red-500/20 text-red-400'
+                              : 'bg-amber-500/20 text-amber-400'
+                          }`}
                         >
-                          {tx.status || 'pending'}
-                        </Badge>
+                          {t.status || 'Pending'}
+                        </span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
-        </Card>
-      </div>
-
-      {/* 3. Payment Upload Modal (Dialog) */}
-      <Dialog isOpen={!!selectedPlan} onClose={() => setSelectedPlan(null)} className="max-w-xl bg-[#0d0d1a] border-[#1a1a2e]">
-        <DialogHeader>
-          <DialogTitle className="text-white text-xl">Upgrade to {selectedPlan?.name}</DialogTitle>
-          <DialogDescription className="text-gray-400 text-xs">
-            Confirm your choice and complete the payment process below.
-          </DialogDescription>
-        </DialogHeader>
-
-        {submitSuccess ? (
-          <div className="space-y-6 text-center py-6">
-            <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20">
-              <Check className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="text-lg font-bold text-white">Payment Submitted Successfully!</h4>
-              <p className="text-gray-400 text-sm mt-2 max-w-sm mx-auto">
-                Our support team is verifying your transaction. It usually takes less than 24 hours to active your plan.
-              </p>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setSelectedPlan(null)} variant="default" className="w-full sm:w-auto">
-                Got it
-              </Button>
-            </DialogFooter>
           </div>
-        ) : (
-          <form onSubmit={handleSubmitPayment} className="space-y-5">
-            {/* Plan Info Card */}
-            <div className="flex justify-between items-center bg-[#131326] p-4 rounded-lg border border-white/5">
-              <div>
-                <span className="text-xs text-indigo-400 font-semibold uppercase tracking-wider">SELECTED PLAN</span>
-                <p className="text-base font-bold text-white mt-0.5">{selectedPlan?.name}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xs text-gray-500 uppercase">PRICE</span>
-                <p className="text-lg font-extrabold text-white mt-0.5">{selectedPlan?.price}</p>
-              </div>
-            </div>
-
-            {/* Payment Methods Section */}
-            <div className="space-y-3">
-              <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 block">Payment Methods</label>
-              
-              {paymentMethodsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : paymentMethods.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4 bg-white/2 rounded-lg">No payment methods configured.</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {paymentMethods.map((method) => {
-                    const isSelected = selectedMethod?.name === method.name
-                    return (
-                      <button
-                        key={method.name}
-                        type="button"
-                        onClick={() => setSelectedMethod(method)}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          isSelected 
-                            ? 'bg-indigo-600/10 border-indigo-500 text-white shadow-md' 
-                            : 'bg-white/2 border-white/5 text-gray-400 hover:bg-white/5 hover:text-gray-300'
-                        }`}
-                      >
-                        <p className="text-sm font-bold truncate">{method.name}</p>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* QR and Account Info */}
-            {selectedMethod && (
-              <div className="bg-[#131326] p-4 rounded-lg border border-white/5 space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
-                  {selectedMethod.qr_image_url && (
-                    <img 
-                      src={selectedMethod.qr_image_url} 
-                      alt={`${selectedMethod.name} QR Code`} 
-                      className="w-32 h-32 object-contain bg-white p-1 rounded-md shrink-0 border border-white/10" 
-                    />
-                  )}
-                  <div className="flex-1 space-y-2 text-center sm:text-left">
-                    <h5 className="font-bold text-white text-sm">{selectedMethod.name} Account</h5>
-                    <p className="text-xs text-gray-300 bg-white/2 p-2.5 rounded border border-white/5 font-mono select-all break-all whitespace-pre-wrap">
-                      {selectedMethod.details || selectedMethod.account_number || 'Details unavailable'}
-                    </p>
-                    <p className="text-[11px] text-gray-500">Scan the QR code or send payment to the details above.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* File Upload Input & Text Input */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 block">Screenshot of Receipt</label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div className="flex h-10 w-full items-center justify-between rounded-lg border border-white/10 bg-[#1a1a24] px-3 py-2 text-sm text-gray-400 hover:bg-white/3">
-                    <span className="truncate max-w-[150px]">{fileName || 'Choose image'}</span>
-                    <Upload className="w-4 h-4 text-gray-500" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 block">Transaction ID / Reference</label>
-                <Input
-                  type="text"
-                  placeholder="e.g. TXN10023405"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  className="bg-[#1a1a24]"
-                />
-              </div>
-            </div>
-
-            {submitError && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-rose-400">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>{submitError}</span>
-              </div>
-            )}
-
-            <DialogFooter className="sm:space-x-3 mt-6 border-t border-white/5 pt-4">
-              <Button type="button" variant="outline" onClick={() => setSelectedPlan(null)} disabled={submitting}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="gradient" isLoading={submitting} disabled={submitting || !selectedMethod}>
-                Submit Payment Verification
-              </Button>
-            </DialogFooter>
-          </form>
         )}
-      </Dialog>
+      </div>
     </div>
   )
 }
