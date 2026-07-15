@@ -14,41 +14,68 @@ const AVAILABLE_PLANS = [
     price: 'NPR 0',
     period: 'forever',
     tournamentLimit: 3,
-    description: 'Perfect to try out NexPlay features in your Discord server.',
+    color: 'bg-slate-600/20 text-slate-400 border-slate-600/30',
+    badge: null,
+    description: 'Try NexPlay with up to 3 tournaments — no payment needed.',
     features: [
       'Up to 3 Tournaments total',
       'Basic brackets & matchmaking',
+      'Player registration channels',
       'Discord roles integration',
-      'Community support'
+      'Community support',
     ]
   },
   {
-    name: 'Basic',
-    price: 'NPR 499',
+    name: 'Starter',
+    price: 'NPR 99',
     period: 'month',
     tournamentLimit: 10,
-    description: 'Grow your gaming community with regular tournaments.',
+    color: 'bg-blue-600/20 text-blue-400 border-blue-600/30',
+    badge: null,
+    description: 'Normal access — run regular tournaments for your community.',
     features: [
-      'Up to 10 Tournaments total',
+      'Up to 10 Tournaments / month',
       'Automated match generation',
       'Participant registration forms',
       'Basic analytics dashboard',
-      'Priority Discord support'
+      'Registration CSV export',
+      'Priority Discord support',
     ]
   },
   {
     name: 'Pro',
-    price: 'NPR 999',
+    price: 'NPR 299',
     period: 'month',
     tournamentLimit: Infinity,
-    description: 'Unlimited tournaments and premium customization tools.',
+    color: 'bg-indigo-600/20 text-indigo-400 border-indigo-600/30',
+    badge: 'Most Popular',
+    description: 'AI tournament control — unlimited tournaments with smart automation.',
     features: [
       'Unlimited Tournaments',
-      'Custom role branding & rewards',
-      'Full exportable registration sheets',
-      'Advanced tournament analytics',
-      '24/7 Dedicated account manager',
-      'Ad-free portal experience'
+      'AI tournament controls',
+      'Auto match scheduling',
+      'AI announcements & posters',
+      'Advanced analytics dashboard',
+      'Daily Excel reports via DM',
+      'Custom role branding',
+    ]
+  },
+  {
+    name: 'Elite',
+    price: 'NPR 399',
+    period: 'month',
+    tournamentLimit: Infinity,
+    color: 'bg-amber-600/20 text-amber-400 border-amber-600/30',
+    badge: 'Full Access',
+    description: 'Everything — AI support agent, memes, clips, full automation.',
+    features: [
+      'Everything in Pro',
+      'AI support agent in Discord',
+      'Auto meme & clip posts',
+      'Server growth AI advisor',
+      '/host_game engagement tools',
+      'Custom server branding',
+      'Dedicated account manager',
     ]
   }
 ]
@@ -171,7 +198,7 @@ export default function Subscription() {
     setSubmitError('')
 
     try {
-      const amountValue = selectedPlan.name === 'Basic' ? 499 : selectedPlan.name === 'Pro' ? 999 : 0
+      const amountValue = selectedPlan.name === 'Starter' ? 99 : selectedPlan.name === 'Pro' ? 299 : selectedPlan.name === 'Elite' ? 399 : 0
       
       const payload = {
         guild_id: guild.id,
@@ -290,11 +317,16 @@ export default function Subscription() {
                 key={plan.name} 
                 className={`bg-[#0d0d1a] border-[#1a1a2e] flex flex-col justify-between p-6 relative overflow-hidden ${
                   isCurrent ? 'ring-2 ring-indigo-500/50 shadow-lg shadow-indigo-500/10' : ''
-                }`}
+                } ${plan.badge === 'Most Popular' ? 'ring-1 ring-indigo-500/30' : ''}`}
               >
                 {isCurrent && (
                   <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-bl-lg">
                     Current
+                  </div>
+                )}
+                {plan.badge && !isCurrent && (
+                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border mb-3 w-fit ${plan.color}`}>
+                    {plan.badge}
                   </div>
                 )}
                 <div>
