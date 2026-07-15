@@ -13,6 +13,7 @@ import Registrations  from './pages/Registrations'
 import Analytics      from './pages/Analytics'
 import Subscription   from './pages/Subscription'
 import Settings       from './pages/Settings'
+import GFX            from './pages/GFX'
 
 function PrivateRoute({ children }) {
   const { user, isLoading } = useAuth()
