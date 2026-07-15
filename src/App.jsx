@@ -41,6 +41,7 @@ function AppRoutes() {
         <Route path="/analytics"         element={<Analytics/>} />
         <Route path="/subscription"      element={<Subscription/>} />
         <Route path="/settings"          element={<Settings/>} />
+        <Route path="/gfx"              element={<GFX/>} />
       </Route>
 
       {/* Fallback */}

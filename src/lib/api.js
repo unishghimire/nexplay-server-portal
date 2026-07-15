@@ -40,4 +40,9 @@ export const api = {
   getPaymentMethods: () => request('?action=payment_methods'),
   submitPayment: (data, token) => request('?action=submit_payment', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
   getMyTransactions: (guildId, token) => request(`?action=my_transactions&guild_id=${guildId}`, { headers: { Authorization: `Bearer ${token}` } }),
+  updateTournament: (tournamentId, guildId, data, token) => request('?action=update_tournament', {
+    method: 'POST',
+    body: JSON.stringify({ tournament_id: tournamentId, guild_id: guildId, data }),
+    headers: { Authorization: `Bearer ${token}` },
+  }),
 }
