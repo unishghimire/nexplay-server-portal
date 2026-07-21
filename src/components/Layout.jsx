@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { LayoutDashboard, Trophy, Users, BarChart2, Settings, LogOut, Menu, X, CreditCard, ChevronDown, Check, ExternalLink, Image } from 'lucide-react'
+import { LayoutDashboard, Trophy, Users, BarChart2, Settings, LogOut, Menu, X, CreditCard, ChevronDown, Check, ExternalLink, Image, Monitor } from 'lucide-react'
 
 const NAV = [
   { to: '/dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
@@ -9,6 +9,7 @@ const NAV = [
   { to: '/registrations', label: 'Registrations', icon: Users },
   { to: '/analytics',     label: 'Analytics',     icon: BarChart2 },
   { to: '/gfx',           label: 'GFX Generator', icon: Image },
+  { to: '/overlays',       label: 'OBS Overlays',   icon: Monitor },
   { to: '/subscription',  label: 'Subscription',  icon: CreditCard },
   { to: '/settings',      label: 'Settings',      icon: Settings },
 ]

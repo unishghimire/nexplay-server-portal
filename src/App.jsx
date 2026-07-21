@@ -14,6 +14,14 @@ import Analytics      from './pages/Analytics'
 import Subscription   from './pages/Subscription'
 import Settings       from './pages/Settings'
 import GFX            from './pages/GFX'
+import OverlayHub     from './pages/overlays/OverlayHub'
+import ScoreboardOverlay  from './pages/overlays/ScoreboardOverlay'
+import MatchOverlay       from './pages/overlays/MatchOverlay'
+import BracketOverlay     from './pages/overlays/BracketOverlay'
+import GroupsOverlay      from './pages/overlays/GroupsOverlay'
+import InfoBarOverlay     from './pages/overlays/InfoBarOverlay'
+import ChampionOverlay    from './pages/overlays/ChampionOverlay'
+import RegistrationOverlay from './pages/overlays/RegistrationOverlay'
 
 function PrivateRoute({ children }) {
   const { user, isLoading } = useAuth()
@@ -33,6 +41,15 @@ function AppRoutes() {
       <Route path="/auth/callback" element={<AuthCallback/>} />
       <Route path="/no-bot"        element={<NoBot/>} />
 
+      {/* Public overlay routes (no auth — for OBS browser sources) */}
+      <Route path="/overlay/scoreboard/:tournamentId"    element={<ScoreboardOverlay/>} />
+      <Route path="/overlay/match/:tournamentId"         element={<MatchOverlay/>} />
+      <Route path="/overlay/bracket/:tournamentId"        element={<BracketOverlay/>} />
+      <Route path="/overlay/groups/:tournamentId"         element={<GroupsOverlay/>} />
+      <Route path="/overlay/infobar/:tournamentId"        element={<InfoBarOverlay/>} />
+      <Route path="/overlay/champion/:tournamentId"       element={<ChampionOverlay/>} />
+      <Route path="/overlay/registration/:tournamentId"   element={<RegistrationOverlay/>} />
+
       {/* Protected */}
       <Route element={<PrivateRoute><Layout/></PrivateRoute>}>
         <Route path="/dashboard"         element={<Dashboard/>} />
@@ -43,6 +60,7 @@ function AppRoutes() {
         <Route path="/subscription"      element={<Subscription/>} />
         <Route path="/settings"          element={<Settings/>} />
         <Route path="/gfx"              element={<GFX/>} />
+        <Route path="/overlays"          element={<OverlayHub/>} />
       </Route>
 
       {/* Fallback */}
