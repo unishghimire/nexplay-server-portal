@@ -82,10 +82,11 @@ export default function Subscription() {
     ])
       .then(([serverResponse, paymentResponse, transactionsResponse]) => {
         setServer(serverResponse?.server || serverResponse)
-        setPaymentMethods(paymentResponse || [])
+        const methods = paymentResponse?.methods || paymentResponse?.payment_methods || []
+        setPaymentMethods(methods)
         setTransactions(transactionsResponse?.transactions || transactionsResponse || [])
-        if (paymentResponse && paymentResponse.length > 0) {
-          const activeMethod = paymentResponse.find(m => m.active) || paymentResponse[0]
+        if (methods.length > 0) {
+          const activeMethod = methods.find(m => m.active) || methods[0]
           setSelectedMethod(activeMethod)
         }
       })
