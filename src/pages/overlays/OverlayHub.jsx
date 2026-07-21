@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function OverlayHub() {
-  const { guildId, token } = useAuth();
+  const { guild, token } = useAuth();
   const [tournaments, setTournaments] = useState([]);
   const [selectedTournamentId, setSelectedTournamentId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ export default function OverlayHub() {
     async function fetchTournaments() {
       try {
         setLoading(true);
-        const data = await api.getTournaments(guildId, token);
+        const data = await api.getTournaments(guild?.id, token);
         setTournaments(data);
         if (data && data.length > 0) {
           setSelectedTournamentId(data[0].id);
@@ -41,7 +41,7 @@ export default function OverlayHub() {
       }
     }
     fetchTournaments();
-  }, [guildId, token]);
+  }, [guild?.id, token]);
 
   const overlayTypes = [
     {
