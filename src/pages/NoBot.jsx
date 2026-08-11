@@ -8,7 +8,7 @@ export default function NoBot() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
       <div className="text-center max-w-sm">
-        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-3xl mx-auto mb-6">🤖</div>
+        <img src="/logo.png" alt="NexPlay" className="w-16 h-16 rounded-2xl object-cover mx-auto mb-6" />
         <h1 className="text-2xl font-bold text-white mb-2">Bot Not Found</h1>
         <p className="text-gray-400 text-sm mb-8">NexPlay Bot isn't in any of your servers yet. Invite it to get started with tournaments.</p>
 

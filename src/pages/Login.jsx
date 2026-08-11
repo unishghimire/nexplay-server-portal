@@ -67,7 +67,7 @@ export default function Login() {
       {/* ── NAV ─────────────────────────────────────────────────────── */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-sm font-black text-white">N</div>
+          <img src="/logo.png" alt="NexPlay" className="w-8 h-8 rounded-lg object-cover" />
           <span className="font-bold tracking-tight text-lg">NexPlay</span>
         </div>
         <div className="flex items-center gap-3">
