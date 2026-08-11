@@ -2,10 +2,15 @@
 const FUNCTION_BASE = 'https://6a5226b5047f5c59d961130e.base44.app/api/apps/6a5226b5047f5c59d961130e/functions/discordAuth'
 
 async function request(path, options = {}) {
-  const r = await fetch(`${FUNCTION_BASE}${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-  })
+  let r
+  try {
+    r = await fetch(`${FUNCTION_BASE}${path}`, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+    })
+  } catch (netErr) {
+    throw new Error('Cannot reach NexPlay server. Check your connection and try again.')
+  }
   const data = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error(data.error || data.message || data.detail || `HTTP ${r.status}`)
   return data

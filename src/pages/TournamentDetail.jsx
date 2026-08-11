@@ -364,7 +364,8 @@ export default function TournamentDetail() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {groups.map((g, idx) => {
-                const names = (g.player_names || '').split(',').filter(Boolean)
+                const rawNames = g.player_names || []
+                const names = Array.isArray(rawNames) ? rawNames : String(rawNames).split(',').map(s=>s.trim()).filter(Boolean)
                 return (
                   <div key={g.id || idx} className="bg-[#13131a] border border-white/5 rounded-xl p-5 space-y-3">
                     <div className="flex justify-between items-center border-b border-white/5 pb-2">

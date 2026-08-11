@@ -105,6 +105,12 @@ export default function Subscription() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Validate file size — 5MB max
+    if (file.size > 5 * 1024 * 1024) {
+      setSubmitError('File too large. Please upload an image under 5MB.')
+      return
+    }
+
     setFileName(file.name)
     const reader = new FileReader()
     reader.onloadend = () => {

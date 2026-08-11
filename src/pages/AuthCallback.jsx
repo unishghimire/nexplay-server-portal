@@ -21,18 +21,23 @@ export default function AuthCallback() {
     api.exchangeCode(code, redirectUri)
       .then(data => {
         const { token, user, guilds, bot_invite_url } = data
+        const safeGuilds = Array.isArray(guilds) ? guilds : []
 
         localStorage.setItem('nexplay_auth_token', token)
         localStorage.setItem('nexplay_user',       JSON.stringify(user))
-        localStorage.setItem('nexplay_guilds',     JSON.stringify(guilds))
+        localStorage.setItem('nexplay_guilds',     JSON.stringify(safeGuilds))
         localStorage.setItem('nexplay_bot_invite', bot_invite_url || '')
+
+        if (!token || !user) {
+          throw new Error('Login failed — no token or user returned from server.')
+        }
 
         // Always pick the first guild that has the bot, or the first guild overall
         // Prefer a server the user owns with bot, else first with bot, else first overall
-        const ownedWithBot  = guilds.find(g => g.bot_present && g.is_owner)
-        const adminWithBot  = guilds.find(g => g.bot_present && g.permissions_admin)
-        const anyWithBot    = guilds.find(g => g.bot_present)
-        const chosen        = ownedWithBot || adminWithBot || anyWithBot || guilds[0]
+        const ownedWithBot  = safeGuilds.find(g => g.bot_present && g.is_owner)
+        const adminWithBot  = safeGuilds.find(g => g.bot_present && g.permissions_admin)
+        const anyWithBot    = safeGuilds.find(g => g.bot_present)
+        const chosen        = ownedWithBot || adminWithBot || anyWithBot || safeGuilds[0]
 
         if (chosen) {
           localStorage.setItem('nexplay_guild',  JSON.stringify({ id: chosen.id, name: chosen.name, icon: chosen.icon }))
@@ -40,7 +45,7 @@ export default function AuthCallback() {
           login(token, user, { id: chosen.id, name: chosen.name, icon: chosen.icon }, chosen.server_record)
         }
 
-        const hasBotServers = guilds.filter(g => g.bot_present)
+        const hasBotServers = safeGuilds.filter(g => g.bot_present)
         if (hasBotServers.length === 0) {
           navigate('/no-bot')
         } else {

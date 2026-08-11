@@ -21,10 +21,10 @@ export const auth = {
 
   loadSession() {
     try {
-      const token       = localStorage.getItem('nexplay_auth_token')
-      const user        = JSON.parse(localStorage.getItem('nexplay_user'))
-      const guild       = JSON.parse(localStorage.getItem('nexplay_guild'))
-      const serverRecord= JSON.parse(localStorage.getItem('nexplay_server'))
+      const token        = localStorage.getItem('nexplay_auth_token')
+      const user         = JSON.parse(localStorage.getItem('nexplay_user') || 'null')
+      const guild        = JSON.parse(localStorage.getItem('nexplay_guild') || 'null')
+      const serverRecord = JSON.parse(localStorage.getItem('nexplay_server') || 'null')
       if (!token || !user) return null
       return { token, user, guild, serverRecord }
     } catch { return null }
@@ -39,9 +39,9 @@ export const auth = {
     if (!token) return true
     try {
       const parts = token.split('.')
-      if (parts.length < 3) return false
+      if (parts.length < 3) return true  // Not a JWT → treat as expired
       const payload = JSON.parse(atob(parts[1]))
-      return payload.exp && payload.exp < Date.now()
-    } catch { return false }
+      return payload.exp ? payload.exp < Date.now() : false
+    } catch { return true }  // Invalid token → expired
   }
 }

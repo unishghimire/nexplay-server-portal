@@ -11,11 +11,18 @@ const STATUS_STYLES = {
 }
 
 const COMMANDS_REFERENCE = [
-  { name: '/create_tournament', desc: 'Initialize and start drafting a new tournament bracket in discord.' },
-  { name: '/generate_groups', desc: 'Distribute registered teams/participants into automatic matches pools.' },
-  { name: '/start_tournament', desc: 'Finalize drafts, locked registrations, and announce brackets.' },
-  { name: '/update_score', desc: 'Record score results for active matches and progress brackets.' },
-  { name: '/announcements', desc: 'Direct bot to send customized broadcasts to registration feeds.' },
+  { name: '/create_tournament', desc: 'Create a new tournament with a 3-step form (name, game, prize, format, rules).' },
+  { name: '/edit_tournament', desc: 'Edit an existing tournament\'s details (prize, date, rules, slots, status).' },
+  { name: '/register', desc: 'Show registration instructions for a tournament in the #register channel.' },
+  { name: '/groups', desc: 'Generate random group draws from registered teams.' },
+  { name: '/results', desc: 'Post match results to the results channel and save to database.' },
+  { name: '/standings_post', desc: 'Post current standings/leaderboard based on match results.' },
+  { name: '/schedule_post', desc: 'Post the match schedule to the roadmap channel.' },
+  { name: '/roadmap_post', desc: 'Post the tournament roadmap with stage breakdown.' },
+  { name: '/export_csv', desc: 'Export tournament registrations as a CSV file.' },
+  { name: '/announce', desc: 'Post a custom announcement embed to a tournament channel.' },
+  { name: '/delete_tournament', desc: 'Delete a tournament: backs up data, deletes channels + DB records.' },
+  { name: '/setup', desc: 'Initialize NexPlay channels and register your server (owner only).' },
 ]
 
 export default function Settings() {

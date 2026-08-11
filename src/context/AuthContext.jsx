@@ -29,6 +29,11 @@ export const AuthProvider = ({ children }) => {
   const login = (token, user, guild, serverRecord) => {
     auth.saveSession(token, user, guild, serverRecord)
     setSession({ token, user, guild, serverRecord })
+    // Reload guilds from localStorage (set by AuthCallback after OAuth)
+    try {
+      const stored = JSON.parse(localStorage.getItem('nexplay_guilds') || '[]')
+      setGuilds(stored)
+    } catch { /* ignore */ }
   }
 
   const logout = () => {
