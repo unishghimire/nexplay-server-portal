@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
-import { Trophy, Users, Zap, Calendar, AlertTriangle, ExternalLink } from 'lucide-react'
+import { Trophy, Users, Zap, Calendar, AlertTriangle, ExternalLink, Bot, Wifi, Music, Activity } from 'lucide-react'
 
 const T_STATUS_COLORS = {
   registration_open: 'bg-emerald-500/20 text-emerald-400',
@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [tournaments, setTournaments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [botStatus, setBotStatus] = useState(null)
 
   useEffect(() => {
     if (!guild || !token) return
@@ -49,6 +50,26 @@ export default function Dashboard() {
       })
       .finally(() => setLoading(false))
   }, [guild, token])
+
+  // Fetch bot status (from adminApi, no auth needed for status)
+  useEffect(() => {
+    const fetchBotStatus = async () => {
+      try {
+        const r = await fetch('https://6a5226b5047f5c59d961130e.base44.app/api/apps/6a5226b5047f5c59d961130e/functions/adminApi?action=bot_status', {
+          headers: { 'x-admin-key': '1212' }
+        })
+        const d = await r.json()
+        if (d.bot) {
+          // Find this guild's status
+          const myGuild = (d.bot.guilds || []).find(g => g.guild_id === guild?.id)
+          setBotStatus({ ...d.bot, myGuild })
+        }
+      } catch { /* silent fail */ }
+    }
+    fetchBotStatus()
+    const interval = setInterval(fetchBotStatus, 15000)
+    return () => clearInterval(interval)
+  }, [guild?.id])
 
   if (loading) {
     return (
@@ -158,6 +179,56 @@ export default function Dashboard() {
           </p>
         </div>
       </div>
+
+      {/* Bot Status Widget */}
+      {botStatus && (
+        <div className="bg-[#13131a] border border-white/5 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Bot className="w-5 h-5 text-indigo-400" />
+              <h3 className="text-white font-semibold">Bot Status</h3>
+              {botStatus.is_stale ? (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">OFFLINE</span>
+              ) : (
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>ONLINE
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-gray-500">Uptime: {botStatus.uptime_formatted}</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex items-center gap-2">
+              <Wifi className="w-4 h-4 text-gray-500"/>
+              <div>
+                <p className="text-gray-500 text-xs">Latency</p>
+                <p className={`text-sm font-bold ${botStatus.latency_ms < 100 ? 'text-emerald-400' : botStatus.latency_ms < 200 ? 'text-yellow-400' : 'text-red-400'}`}>{botStatus.latency_ms}ms</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-gray-500"/>
+              <div>
+                <p className="text-gray-500 text-xs">CPU</p>
+                <p className="text-sm font-bold text-white">{botStatus.cpu_percent}%</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Music className="w-4 h-4 text-gray-500"/>
+              <div>
+                <p className="text-gray-500 text-xs">Music</p>
+                <p className="text-sm font-bold text-white">{botStatus.myGuild?.playing_music ? '🎵 Playing' : botStatus.myGuild?.voice_connected ? '🔊 Connected' : 'Idle'}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Bot className="w-4 h-4 text-gray-500"/>
+              <div>
+                <p className="text-gray-500 text-xs">24/7</p>
+                <p className="text-sm font-bold text-white">{botStatus.myGuild?.is_247 ? '✅ Active' : '❌ Off'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Tournaments */}
